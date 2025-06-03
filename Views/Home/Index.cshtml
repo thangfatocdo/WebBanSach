@@ -1,0 +1,235 @@
+﻿@using WebBanSach.Models;
+@using WebBanSach.Models.Entities
+@{
+    ViewData["Title"] = "Home Page";
+    var ratings = ViewBag.BookRatings as List<BookRating>;
+
+}
+
+<!-- Hero Section start  -->
+<div class="hero-section hero-1 fix">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 col-xl-8 col-lg-6">
+                <div class="hero-items">
+                    <div class="book-shape">
+                        <img src="~/assets/img/hero/book.png" alt="shape-img">
+                    </div>
+                    <div class="frame-shape1 float-bob-x">
+                        <img src="~/assets/img/hero/frame.png" alt="shape-img">
+                    </div>
+                    <div class="frame-shape2 float-bob-y">
+                        <img src="~/assets/img/hero/frame-2.png" alt="shape-img">
+                    </div>
+                    <div class="frame-shape3">
+                        <img src="~/assets/img/hero/xstar.png" alt="img">
+                    </div>
+                    <div class="frame-shape4 float-bob-x">
+                        <img src="~/assets/img/hero/frame-shape.png" alt="img">
+                    </div>
+                    <div class="bg-shape1">
+                        <img src="~/assets/img/hero/bg-shape.png" alt="img">
+                    </div>
+                    <div class="bg-shape2">
+                        <img src="~/assets/img/hero/bg-shape2.png" alt="shape-img">
+                    </div>
+                    <div class="hero-content">
+                        <h6 class="wow fadeInUp" data-wow-delay=".3s">Giảm đến 30%</h6>
+                        <h1 class="wow fadeInUp" data-wow-delay=".5s">
+                            Mua sách mới <br> Với giá tốt nhất
+                        </h1>
+                        @* <div class="form-clt wow fadeInUp" data-wow-delay=".9s">
+                            <button type="submit" class="theme-btn">
+                                Shop Now <i class="fa-solid fa-arrow-right-long"></i>
+                            </button>
+                        </div> *@
+                    </div>
+
+                </div>
+            </div>
+            <div class="col-12 col-xl-4 col-lg-6">
+                <div class="girl-image">
+                    <img class=" float-bob-x" src="~/assets/img/hero/hero-girl.png" alt="img">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Shop Section start  -->
+<section class="shop-section section-padding fix pt-0">
+    <div class="container">
+        <div class="section-title-area">
+            <div class="section-title">
+                <h2 class="wow fadeInUp" data-wow-delay=".3s">Có thể bạn sẽ thích</h2>
+            </div>
+            <a href="shop.html" class="theme-btn transparent-btn wow fadeInUp" data-wow-delay=".5s">
+                Explore More <i class="fa-solid fa-arrow-right-long"></i>
+            </a>
+        </div>
+        <div class="swiper book-slider">
+            <div class="swiper-wrapper">
+                @{
+                    // Lấy danh sách sách gợi ý từ Controller
+                    var lsBooks = ViewBag.RecommendBooks as List<Book>;
+                }
+
+                @if (lsBooks != null && lsBooks.Any())
+                {
+                    foreach (var item in lsBooks)
+                    { // Lọc rating chỉ của cuốn này
+                        var firstImg = item.BookImages?.FirstOrDefault()?.ImageUrl ?? "default.jpg";
+                        var stats = ratings
+                        .Where(r => r.BookId == item.BookId)
+                        .ToList();
+
+                        // Tính trung bình & tổng
+                        double avg = stats.Any()
+                        ? stats.Average(r => r.RatingValue ?? 0)
+                        : 0;
+                        int rounded = (int)Math.Round(avg, MidpointRounding.AwayFromZero);
+                        int count = stats.Count;
+                        string url = $"/{item.BookId}.html";//gán đường dẫn bên controller
+                        <div class="swiper-slide">
+                            <div class="shop-box-items style-2">
+                                <div class="book-thumb center">
+                                    <a href="@url">
+                                        <img src="~/Images/@firstImg" alt="@item.Title"/>
+                                    </a>
+                                    <ul class="shop-icon d-grid justify-content-center align-items-center">
+                                        <li>
+                                            <a href="#"><i class="far fa-heart"></i></a>
+                                        </li>
+                                        <li>
+                                            <a href="#"><img class="icon" src="~/assets/img/icon/shuffle.svg" alt="shuffle-icon" /></a>
+                                        </li>
+                                        <li>
+                                            <a href="/Book/Details/@item.BookId"><i class="far fa-eye"></i></a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="shop-content">
+                                    <h3>@item.Title</h3>
+                                    <ul class="price-list">
+                                        <li>@item.Price.ToString("#,##0")VNĐ</li>
+                                        <li>
+                                            @* Hiển thị sao theo rounded riêng *@
+                                            <i class="fa-solid fa-star"></i>
+                                            <span>@avg.ToString("0.0") (@count) </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="shop-button">
+                                    <a class="theme-btn add-to-cart" data-bookid="@item.BookId">
+                                        <i class="fa-solid fa-basket-shopping"></i> Thêm vào giỏ
+                                    </a> @* không dùng thẻ button *@
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>Chưa có gợi ý nào!</p>
+                }
+
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Top Ratting Book Section start  -->
+<section class="top-ratting-book-section fix section-padding section-bg">
+    <div class="container">
+        <div class="top-ratting-book-wrapper">
+            <div class="section-title-area">
+                <div class="section-title">
+                    <h2 class="wow fadeInUp" data-wow-delay=".3s">Sách được đánh giá cao</h2>
+                </div>
+            </div>
+            <div class="swiper book-slider">
+                <div class="swiper-wrapper">
+                    @{
+                        var listBooks = ViewBag.TopRatedBooks as List<Book>;
+                        var topratings = ViewBag.BookRatings as List<BookRating>;
+                    }
+
+                    @if (listBooks != null && listBooks.Any())
+                    {
+                        foreach (var item in listBooks)
+                        {
+                            var firstImg = item.BookImages?.FirstOrDefault()?.ImageUrl ?? "default.jpg";
+                            var stats = topratings
+                            .Where(r => r.BookId == item.BookId)
+                            .ToList();
+
+                            double avg = stats.Any()
+                            ? stats.Average(r => r.RatingValue ?? 0)
+                            : 0;
+                            int rounded = (int)Math.Round(avg, MidpointRounding.AwayFromZero);
+                            int count = stats.Count;
+                            string url = $"/{item.BookId}.html";
+
+                            <div class="swiper-slide">
+                                <div class="shop-box-items style-2">
+                                    <div class="book-thumb center">
+                                        <a href="@url">
+                                            <img src="~/Images/@firstImg" alt="@item.Title" style="width: 315px; height: 402px; object-fit: cover;" />
+                                        </a>
+                                        <ul class="shop-icon d-grid justify-content-center align-items-center">
+                                            <li><a href="#"><i class="far fa-heart"></i></a></li>
+                                            <li><a href="#"><img class="icon" src="~/assets/img/icon/shuffle.svg" alt="shuffle-icon" /></a></li>
+                                            <li><a href="@url"><i class="far fa-eye"></i></a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="shop-content">
+                                        <h3>@item.Title</h3>
+                                        <ul class="price-list">
+                                            <li>@item.Price.ToString("#,##0") VNĐ</li>
+                                            <li>
+                                                @* Hiển thị sao theo rounded riêng *@
+                                                <i class="fa-solid fa-star"></i>
+                                                <span>@avg.ToString("0.0") (@count) </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="shop-button">
+                                        <a class="theme-btn add-to-cart" data-bookid="@item.BookId">
+                                            <i class="fa-solid fa-basket-shopping"></i> Thêm vào giỏ
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p>Chưa có sách nổi bật nào!</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // chặn mặc định (nếu là <a>)
+                const bookId = btn.getAttribute('data-bookid');
+                const res = await fetch(`/api/cart/add?bookID=${bookId}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Thông báo nhẹ
+                    showToast("Đã thêm vào giỏ hàng!");
+                } else {
+                    alert('Lỗi thêm giỏ hàng.');
+                }
+            });
+        });
+    </script>
+}

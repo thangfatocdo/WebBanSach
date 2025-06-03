@@ -1,0 +1,19 @@
+﻿@{
+    var message = TempData["ToastMessage"] as string;
+    var type = TempData["ToastType"] as string ?? "success"; // success | error | info | warning
+}
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <text>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const msg = document.createElement('div');
+                msg.className = 'toast-notify toast-@type';
+                msg.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + @Html.Raw(Json.Serialize(message));
+                document.body.append(msg);
+                setTimeout(() => msg.remove(), 2000);
+            });
+        </script>
+    </text>
+}

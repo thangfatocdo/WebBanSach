@@ -1,0 +1,548 @@
+﻿@model PagedList.Core.IPagedList<WebBanSach.Models.Entities.Book>
+@using WebBanSach.Models.Entities
+
+@{
+    ViewData["Title"] = "Shop - " + ViewBag.CurrentPage;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int PageCurrent = ViewBag.CurrentPage;
+    int PageNext = PageCurrent + 1;
+    var categories = ViewBag.Categories as List<Category>;
+    var selectedCategoryId = ViewBag.SelectedCategoryId as int?;
+    var ratings = ViewBag.BookRatings as List<BookRating>;
+    var selectedRating   = ViewBag.SelectedRating as int?;
+    var allRatings       = ViewBag.BookRatings as List<BookRating>;
+    var sort = ViewBag.SortOption as string;
+    var minPrice = ViewBag.MinPrice as decimal?;
+    var maxPrice = ViewBag.MaxPrice as decimal?;
+    var rating = ViewBag.SelectedRating as int?;
+    // Tính count cho mỗi mức sao
+    var ratingGroups = allRatings
+        .GroupBy(r => r.BookId)
+        .Select(g => new
+        {
+            BookId = g.Key,
+            Avg = g.Average(r => (double?)(r.RatingValue ?? 0)) ?? 0
+        })
+        .ToList();
+
+    // 2. Đếm số sách có avg trong [s, s+1)
+    Func<int, int> countOfBook = s => ratingGroups
+        .Count(x => x.Avg >= s && x.Avg < s + 1);
+}
+<!-- Breadcumb Section Start -->
+    <div class="breadcrumb-wrapper">
+        <div class="book1">
+            <img src="~/assets/img/hero/book1.png" alt="book">
+        </div>
+        <div class="book2">
+            <img src="~/assets/img/hero/book2.png" alt="book">
+        </div>
+        <div class="container">
+            <div class="page-heading">
+            @if (ViewBag.SearchKeyword != null)
+            {
+                <h1>Kết quả tìm kiếm cho: "@ViewBag.SearchKeyword"</h1>
+            }
+            else
+            {
+                <h1>KỆ SÁCH</h1>
+            }
+
+                <div class="page-header">
+                    <ul class="breadcrumb-items wow fadeInUp" data-wow-delay=".3s">
+                        <li>
+                            <a href="/">
+                                Trang chủ
+                            </a>
+                        </li>
+                        <li>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </li>
+                        <li>
+                            KỆ SÁCH
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shop Section Start -->
+    <section class="shop-section fix section-padding">
+        <div class="container">
+            <div class="shop-default-wrapper">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="woocommerce-notices-wrapper wow fadeInUp" data-wow-delay=".3s">
+                        @if (Model != null && Model.Count > 0)
+                        {
+                            int first = ((Model.PageNumber - 1) * Model.PageSize) + 1;
+                            int last = first + Model.Count - 1;
+                            int total = Model.TotalItemCount;
+
+                            <p>Hiển thị @first–@last trong @total kết quả</p>
+                        }
+                        <div class="form-clt">
+                            <div class="nice-select" tabindex="0">
+                                <span class="current">
+                                    @{
+                                        var so = ViewBag.SortOption as string;
+                                        string label = so switch
+                                        {
+                                            "price_desc" => "Giá giảm dần",
+                                            "price_asc" => "Giá tăng dần",
+                                            "latest" => "Sách mới nhất",
+                                            "oldest" => "Sách cũ nhất",
+                                            _ => "Mặc định"
+                                        };
+                                    }
+                                    @label
+                                </span>
+                                <ul class="list">
+                                    <li data-value="default" class="option @(string.IsNullOrEmpty(ViewBag.SortOption) || ViewBag.SortOption=="default" ? "selected focus" : "")">
+                                        Mặc định
+                                    </li>
+                                    <li data-value="price_desc" class="option @(ViewBag.SortOption=="price_desc" ? "selected focus" : "")">
+                                        Giá giảm dần
+                                    </li>
+                                    <li data-value="price_asc" class="option @(ViewBag.SortOption=="price_asc" ? "selected focus" : "")">
+                                        Giá tăng dần
+                                    </li>
+                                    <li data-value="latest" class="option @(ViewBag.SortOption=="latest" ? "selected focus" : "")">
+                                        Sách mới nhất
+                                    </li>
+                                    <li data-value="oldest" class="option @(ViewBag.SortOption=="oldest" ? "selected focus" : "")">
+                                        Sách cũ nhất
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-lg-4 order-2 order-md-1 wow fadeInUp" data-wow-delay=".3s">
+                        <div class="main-sidebar">
+                            <div class="single-sidebar-widget">
+                                <div class="wid-title">
+                                    <h5>Tìm kiếm</h5>
+                                </div>
+                            <form asp-controller="Book" asp-action="Search" method="get" class="search-toggle-box">
+                                <div class="input-area search-container">
+                                    <input class="search-input" type="text" name="q" placeholder="Tìm kiếm sách, tác giả">
+                                    <input type="hidden" name="categoryId" value="@selectedCategoryId" />
+                                    <button class="cmn-btn search-icon">
+                                        <i class="far fa-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                            </div>
+
+                            <div class="single-sidebar-widget">
+                                <div class="wid-title">
+                                    <h5>Thể loại</h5>
+                                </div>
+                            <div class="categories-list category-scroll">
+                                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link @(selectedCategoryId == null ? "active" : "")"
+                                           href="@Url.RouteUrl("BookShop", new { categoryId = (int?)null })">
+                                            Tất cả các sách
+                                        </a>
+                                    </li>
+                                    @foreach (var cat in categories)
+                                    {
+                                        <li class="nav-item" role="presentation">
+                                            <a class="nav-link @(selectedCategoryId == cat.CategoryId ? "active" : "")"
+                                               href="@Url.RouteUrl("BookShop", new { categoryId = cat.CategoryId })">
+                                                @cat.CategoryName
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                                </div>
+                            </div>
+                            <div class="single-sidebar-widget">
+                                <div class="wid-title">
+                                    @* <h5>Product Status</h5> *@
+                                </div>
+                                <div class="product-status">
+                                </div>
+                            </div>
+
+                            @* Lọc theo giá *@
+                        <div class="single-sidebar-widget mb-50">
+                            <div class="wid-title"><h5>Lọc qua giá</h5></div>
+                            <form asp-route="BookShop" method="get" class="range__barcustom">
+                                @* Giữ nguyên categorySelection và page trên querystring *@
+                                <input type="hidden" name="categoryId" value="@ViewBag.SelectedCategoryId" />
+                                <input type="hidden" name="page" value="@ViewBag.CurrentPage" />
+
+                                <div class="slider">
+                                    <div class="progress"
+                                         style="left:@((ViewBag.MinPrice ?? 0) / 1000000m * 100m)% ;
+                        right:@((100 - (ViewBag.MaxPrice ?? 1000000m) / 1000000m * 100m))%;">
+                                    </div>
+                                </div>
+
+                                <div class="range-input d-flex mb-3 g-2">
+                                    <input type="range" class="range-min form-range" min="0" max="1000000"
+                                           name="minPrice" min="0" max="1000000" step="10000" value="@(ViewBag.MinPrice ?? 0)" />
+                                    <input type="range" class="range-max form-range" min="0" max="1000000"
+                                           name="maxPrice" min="0" max="1000000" step="10000" value="@(ViewBag.MaxPrice ?? 1000000)" />
+                                </div>
+
+                                <div class="range-items d-flex align-items-center">
+                                    <div class="field">
+                                        <span class="min-display">@((ViewBag.MinPrice ?? 0).ToString("N0")) đ</span>
+                                    </div>
+                                    <div class="separators">-</div>
+                                    <div class="field">
+                                        <span class="max-display">@((ViewBag.MaxPrice ?? 1000000).ToString("N0")) đ</span>
+                                    </div>
+                                    <button type="submit" class="filter-btn theme-btn ms-3">Lọc</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        @* Lọc theo rating *@
+                        <div class="single-sidebar-widget mb-0">
+                            <div class="wid-title">
+                                <h5>Lọc theo đánh giá</h5>
+                            </div>
+                            <div class="categories-list">
+                                @for (int s = 5; s >= 1; s--)
+                                {
+                                    var cnt = countOfBook(s);
+                                    <label class="checkbox-single d-flex align-items-center mb-2">
+                                        <a class="d-flex align-items-center w-100 text-decoration-none @(selectedRating == s ? "text-primary" : "text-dark")"
+                                           href="@Url.RouteUrl("BookShop", new {
+                                               categoryId = ViewBag.SelectedCategoryId,
+                                               minPrice = ViewBag.MinPrice,
+                                               maxPrice = ViewBag.MaxPrice,
+                                               rating = s
+                                           })"
+                                           style="width:100%;">
+                                            <span class="checkbox-area me-2">
+                                                <input type="checkbox" @(selectedRating == s ? "checked" : "") readonly />
+                                                <span class="checkmark"></span>
+                                            </span>
+                                            <span class="text-color">
+                                                <span class="star me-2">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= s)
+                                                    {
+                                                        <i class="fa-solid fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fa-sharp fa-light fa-star"></i>
+                                                    }
+                                                }
+                                            </span>
+                                            <span class="text-color">(@cnt)</span>
+                                            </span>
+                                        </a>
+                                    </label>
+                                }
+                                @* Có thể thêm nút “Xóa filter” khi đã chọn *@
+                                @if (selectedRating.HasValue)
+                                {
+                                    <a href="@Url.RouteUrl("BookShop", new {
+                                        categoryId = ViewBag.SelectedCategoryId,
+                                        minPrice = ViewBag.MinPrice,
+                                        maxPrice = ViewBag.MaxPrice
+                                    })" class="d-block mt-2">Xóa bộ lọc đánh giá</a>
+                                }
+                            </div>
+                        </div>
+
+                        </div>
+                    </div>
+                    <div class="col-xl-9 col-lg-8 order-1 order-md-2">
+                            <div class="tab-pane fade show active" id="pills-arts" role="tabpanel"
+                         aria-labelledby="pills-arts-tab" tabindex="0">
+                        <div class="row">
+                            @if (Model != null && Model.Count() > 0)
+                            {
+                                foreach (var item in Model)
+                                {
+                                    var firstImg = item.BookImages?.FirstOrDefault()?.ImageUrl ?? "default.jpg";
+                                    // Lọc rating chỉ của cuốn này
+                                    var stats = ratings
+                                    .Where(r => r.BookId == item.BookId)
+                                    .ToList();
+
+                                    // Tính trung bình & tổng
+                                    double avg = stats.Any()
+                                    ? stats.Average(r => r.RatingValue ?? 0)
+                                    : 0;
+                                    int rounded = (int)Math.Round(avg, MidpointRounding.AwayFromZero);
+                                    int count = stats.Count;
+                                    string url = $"/{item.BookId}.html";//gán đường dẫn bên controller
+                                    <div class="col-xl-3 col-lg-4 col-md-6 wow fadeInUp" data-wow-delay=".2s">
+                                        <div class="shop-box-items">
+                                            <div class="book-thumb center">
+                                                <a href="@url"><img src="~/Images/@firstImg" alt="@item.Title"></a>
+                                                <ul class="post-box">
+                                                    <li>
+                                                        Hot
+                                                    </li>
+                                                    <li>
+                                                        -30%
+                                                    </li>
+                                                </ul>
+                                                <ul class="shop-icon d-grid justify-content-center align-items-center">
+                                                    <li>
+                                                        <a href="shop-cart.html"><i class="far fa-heart"></i></a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="shop-cart.html">
+                                                            <img class="icon" src="~/assets/img/icon/shuffle.svg"
+                                                                 alt="svg-icon">
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="shop-details.html"><i class="far fa-eye"></i></a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            <div class="shop-content">
+                                                <h3><a href="@url">@item.Title</a></h3>
+                                                <ul class="price-list">
+                                                    <li>@item.Price.ToString("#,##0")VNĐ</li>
+                                                    <li>
+                                                        @* Hiển thị sao theo rounded riêng *@
+                                                        <i class="fa-solid fa-star"></i>
+                                                        <span>@avg.ToString("0.0") (@count) </span>
+                                                    </li>
+                                                </ul>
+                                                <div class="shop-button">
+                                                    <button class="theme-btn add-to-cart" data-bookid="@item.BookId">
+                                                        <i class="fa-solid fa-basket-shopping"></i> Thêm vào giỏ
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                    </div>
+                
+                    </div> @* phần 11 *@
+            @* pagination cho BookShop *@
+            <div class="page-nav-wrap text-center">
+                <ul>
+                    @if (Model.HasPreviousPage)
+                    {
+                        <li>
+                            <a class="next"
+                               href="@Url.RouteUrl("BookShop", new {
+                       page       = Model.PageNumber - 1,
+                       categoryId = selectedCategoryId,
+                       minPrice,
+                       maxPrice,
+                       rating,
+                       sort
+                   })">
+                                Trước đó
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="disabled"><span>Trước đó</span></li>
+                    }
+
+                    @for (int i = 1; i <= Model.PageCount; i++)
+                    {
+                        if (i == Model.PageNumber)
+                        {
+                            <li><span class="page-numbers current">@i</span></li>
+                        }
+                        else
+                        {
+                            <li>
+                                <a class="page-numbers"
+                                   href="@Url.RouteUrl("BookShop", new {
+                           page       = i,
+                           categoryId = selectedCategoryId,
+                           minPrice,
+                           maxPrice,
+                           rating,
+                           sort
+                       })">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                    }
+
+                    @if (Model.HasNextPage)
+                    {
+                        <li>
+                            <a class="next"
+                               href="@Url.RouteUrl("BookShop", new {
+                       page       = Model.PageNumber + 1,
+                       categoryId = selectedCategoryId,
+                       minPrice,
+                       maxPrice,
+                       rating,
+                       sort
+                   })">
+                                Kế tiếp
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="disabled"><span>Kế tiếp</span></li>
+                    }
+                </ul>
+            </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@section Scripts {
+    <script>
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // chặn mặc định (nếu là <a>)
+                const bookId = btn.getAttribute('data-bookid');
+                const res = await fetch(`/api/cart/add?bookID=${bookId}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Thông báo nhẹ
+                    showToast("Đã thêm vào giỏ hàng!");
+                } else {
+                    alert('Lỗi thêm giỏ hàng.');
+                }
+            });
+        });
+    </script>
+    <script>
+        const minRange = document.querySelector('.range-min');
+        const maxRange = document.querySelector('.range-max');
+        const minInput = document.querySelector('.input-min');
+        const maxInput = document.querySelector('.input-max');
+        const progress = document.querySelector('.slider .progress');
+
+        const fmt = v => new Intl.NumberFormat('vi-VN').format(v);
+        function updateDisplays() {
+            const min = +minRange.value;
+            const max = +maxRange.value;
+            document.querySelector('.min-display').textContent =  fmt(min) + ' đ';
+            document.querySelector('.max-display').textContent = fmt(max) + ' đ';
+        }
+
+        // Gọi mỗi khi slider hoặc số thay đổi
+        [minRange, maxRange].forEach(r => r.addEventListener('input', updateDisplays));
+        [minInput, maxInput].forEach(i => i.addEventListener('change', updateDisplays));
+
+        // Khởi tạo lúc load
+        updateDisplays();
+    </script>
+    <script>
+        document.querySelectorAll('.nice-select .option').forEach(li => {
+            li.addEventListener('click', () => {
+                const sort = li.getAttribute('data-value');
+                const params = new URLSearchParams(window.location.search);
+
+                // Nếu chọn "Mặc định", loại bỏ param sort; còn lại gán giá trị
+                if (sort === 'default') {
+                    params.delete('sort');
+                } else {
+                    params.set('sort', sort);
+                }
+
+                // Giữ lại các filter khác nếu có
+                ['categoryId', 'minPrice', 'maxPrice', 'rating', 'page']
+                    .forEach(k => {
+                        if (!params.get(k)) params.delete(k);
+                    });
+
+                // Reload trang với query mới
+                window.location.search = params.toString();
+            });
+        });
+    </script>
+
+}
+
+<style>
+    .category-scroll {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+
+        /* Tùy chọn: làm thanh cuộn trông tinh tế hơn */
+        .category-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .category-scroll::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 4px;
+        }
+
+    .range-items {
+        display: flex !important;
+        align-items: center;
+        flex-wrap: nowrap !important;
+    }
+
+        .range-items .field {
+            white-space: nowrap;
+            min-width: 70px;
+            margin: 0 .5rem;
+        }
+
+        .range-items .separators {
+            margin: 0 .5rem;
+        }
+
+        .range-items .filter-btn {
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+    /* Container cho pagination */
+    .page-nav-wrap ul {
+        list-style: none;
+        padding: 0;
+        margin: 1.5rem 0;
+        text-align: center;
+    }
+
+        .page-nav-wrap ul li {
+            display: inline-block;
+            margin: 0 .3rem;
+        }
+
+            /* Hover lên page number (liên kết) */
+            .page-nav-wrap ul li a.page-numbers:hover {
+                background-color: #ff6700;
+                border-color: #ff6700;
+                color: #fff;
+            }
+
+            /* Số trang hiện tại */
+            .page-nav-wrap ul li span.page-numbers.current {
+                background-color: #ff6700;
+                border-color: #ff6700;
+                color: #fff;
+            }
+
+            /* Hover Prev/Next */
+            .page-nav-wrap ul li a.previous:hover,
+            .page-nav-wrap ul li a.next:hover {
+                background-color: #ff6700;
+                border-color: #ff6700;
+                color: #fff;
+            }
+</style>
+

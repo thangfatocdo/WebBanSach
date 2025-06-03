@@ -1,0 +1,71 @@
+﻿@model WebBanSach.Models.Entities.Order
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng #" + Model.OrderId;
+}
+
+<section class="section-padding">
+    <div class="container">
+        <div class="card shadow-sm p-4">
+            <h4>Đơn hàng #@Model.OrderId</h4>
+            <p><strong>Ngày đặt:</strong> @Model.OrderDate?.ToString("dd/MM/yyyy")</p>
+            <p><strong>Trạng thái:</strong> @Model.Status?.StatusName</p>
+            <p><strong>Người nhận:</strong> @Model.CustomerName</p>
+            <p><strong>SĐT:</strong> @Model.Phone</p>
+            <p><strong>Địa chỉ giao:</strong> @Model.Address</p>
+
+            <hr />
+
+            <h5>Danh sách sản phẩm</h5>
+            <table class="table table-bordered align-middle">
+                <thead>
+                    <tr>
+                        <th>Sách</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderItems)
+                    {
+                        <tr>
+                            <td>@item.Book?.Title</td>
+                            <td>@item.BookPrice?.ToString("#,##0") VNĐ</td>
+                            <td>@item.BookQuantity</td>
+                            <td>@((item.BookPrice * item.BookQuantity)?.ToString("#,##0")) VNĐ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="text-end mt-3">
+                <strong>Tổng cộng: @Model.TotalPrice.ToString("#,##0") VNĐ</strong>
+            </div>
+
+            <div class="d-flex gap-3 mt-4">
+                @if (Model.StatusId == 1 || Model.StatusId == 2)
+                {
+                    <form asp-action="Cancel" asp-route-id="@Model.OrderId" method="post">
+                        <button type="submit" class="btn btn-danger btn-lg">Huỷ đơn hàng</button>
+                    </form>
+                }
+                else if (Model.Status?.StatusName == "Đang giao")
+                {
+                    <div class="alert alert-warning d-flex align-items-center gap-2 mb-0">
+                        <i class="fa-solid fa-truck"></i>
+                        <span>Đơn hàng đang giao, không thể huỷ. </span>
+                        <a href="https://zalo.me/0352037252" target="_blank" class="btn btn-sm btn-primary ms-3">
+                            Liên hệ Zalo
+                        </a>
+                    </div>
+                }
+                <form asp-action="Reorder" asp-controller="ShoppingCart" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="orderId" value="@Model.OrderId" />
+                    <button type="submit" class="btn btn-success btn-lg">Mua lại đơn hàng</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</section>

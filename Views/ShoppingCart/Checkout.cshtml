@@ -1,0 +1,177 @@
+﻿@model WebBanSach.Models.ViewModels.CheckoutViewModel
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+<!-- Breadcumb Section Start -->
+<div class="breadcrumb-wrapper">
+    <div class="book1">
+        <img src="assets/img/hero/book1.png" alt="book">
+    </div>
+    <div class="book2">
+        <img src="assets/img/hero/book2.png" alt="book">
+    </div>
+    <div class="container">
+        <div class="page-heading">
+            <h1>Thanh toán</h1>
+            <div class="page-header">
+                <ul class="breadcrumb-items wow fadeInUp" data-wow-delay=".3s">
+                    <li>
+                        <a href="index.html">
+                            Trang chủ
+                        </a>
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </li>
+                    <li>
+                        Thanh toán
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checkout Section Start -->
+<section class="checkout-section fix section-padding">
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-lg-9">
+                <form asp-action="Checkout"
+                      asp-controller="ShoppingCart"
+                      method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="checkout-single-wrapper">
+                        <div class="checkout-single boxshado-single">
+                            <h4>Thông tin thanh toán</h4>
+                            <div class="checkout-single-form">
+                                <div class="row g-4">
+                                    <!-- Người nhận -->
+                                    <div class="col-lg-12">
+                                        <div class="input-single">
+                                            <span>Họ và tên người nhận*</span>
+                                            <input asp-for="RecipientName" class="form-control"
+                                                   placeholder="Họ và tên người nhận" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="input-single">
+                                            <span>Số điện thoại*</span>
+                                            <input asp-for="Phone" class="form-control"
+                                                   placeholder="Số điện thoại" required />
+                                        </div>
+                                    </div>
+                                    <!-- Địa chỉ tách phần -->
+                                    <div class="col-lg-6">
+                                        <div class="input-single">
+                                            <span>Quốc gia*</span>
+                                            <input asp-for="Country" class="form-control"
+                                                   placeholder="Quốc gia" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="input-single">
+                                            <span>Tỉnh/Thành phố*</span>
+                                            <input asp-for="Province" class="form-control"
+                                                   placeholder="Tỉnh/Thành phố" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="input-single">
+                                            <span>Quận/Huyện*</span>
+                                            <input asp-for="District" class="form-control"
+                                                   placeholder="Quận/Huyện" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="input-single">
+                                            <span>Phường/Xã*</span>
+                                            <input asp-for="Ward" class="form-control"
+                                                   placeholder="Phường/Xã" required />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-12">
+                                        <div class="input-single">
+                                            <span>Địa chỉ nhận hàng*</span>
+                                            <input asp-for="AddressDetail" class="form-control"
+                                                   placeholder="Số nhà, tên đường" required />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-12">
+                                        <div class="input-single">
+                                            <span>Ghi chú đơn hàng (không bắt buộc)</span>
+                                            <textarea asp-for="Notes" class="form-control"
+                                                      placeholder="Thời gian giao, lưu ý thêm..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Phương thức thanh toán -->
+                    <div class="checkout-single boxshado-single mt-4">
+                        <h4>Phương thức thanh toán</h4>
+                        @foreach (var pm in Model.PaymentMethods)
+                        {
+                            <div class="form-check">
+                                <input asp-for="SelectedPaymentMethodId"
+                                       class="form-check-input"
+                                       type="radio"
+                                       value="@pm.PaymentMethodId"
+                                       id="pm_@pm.PaymentMethodId" required />
+                                <label class="form-check-label" for="pm_@pm.PaymentMethodId">
+                                    @pm.MethodName
+                                </label>
+                            </div>
+                        }
+                        <span class="text-danger">@Html.ValidationMessageFor(m => m.SelectedPaymentMethodId)</span>
+                    </div>
+                    <!-- Hoàn tất -->
+                    <button type="submit" class="theme-btn w-100 mt-4">
+                        Hoàn tất Thanh toán
+                    </button>
+                </form>
+            </div>
+
+            <!-- Bên phải: tóm tắt đơn hàng -->
+            <div class="col-lg-3">
+                <div class="checkout-order-area boxshado-single p-3">
+                    <h3>Đơn hàng của bạn</h3>
+                    <div class="product-checout-area">
+                        <div class="checkout-item d-flex justify-content-between">
+                            <strong>Sản phẩm</strong><strong>Thành tiền</strong>
+                        </div>
+
+                        @foreach (var item in Model.CartItems)
+                        {
+                            <div class="checkout-item d-flex justify-content-between">
+                                <span>@item.book.Title (x @item.amount)</span>
+                                <span>@(item.TotalMoney.ToString("#,##0")) VND</span>
+                            </div>
+                        }
+
+                        <div class="checkout-item d-flex justify-content-between mt-3">
+                            <strong>Tổng phụ</strong>
+                            <strong>@(Model.CartItems.Sum(x => x.TotalMoney).ToString("#,##0")) VND</strong>
+                        </div>
+
+                        <div class="checkout-item d-flex justify-content-between">
+                            <strong>Phí vận chuyển</strong>
+                            <strong>Free</strong>
+                        </div>
+
+                        <div class="checkout-item d-flex justify-content-between">
+                            <strong>Tổng cộng</strong>
+                            <strong>@(Model.CartItems.Sum(x => x.TotalMoney).ToString("#,##0")) VND</strong>
+                        </div>
+
+                        <hr />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

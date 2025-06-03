@@ -1,0 +1,482 @@
+﻿@model WebBanSach.Models.Entities.Book
+@using WebBanSach.Models.Entities
+@using System.Linq
+@{
+    var ratings = ViewBag.BookRatings as List<BookRating>;
+    var myRating = ViewBag.MyRating as BookRating;
+    // Tính trung bình và làm tròn
+    double avgRating = ratings.Any()
+        ? ratings.Average(r => r.RatingValue ?? 0)
+        : 0;
+    int rounded = (int)Math.Round(avgRating, MidpointRounding.AwayFromZero);
+    int total = ratings.Count;
+
+}
+<!-- Shop Details Section Start -->
+    <section class="shop-details-section fix section-padding">
+        <div class="container">
+            <div class="shop-details-wrapper">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="shop-details-image">
+                        <!-- Phần hiển thị ảnh to -->
+                        <div class="tab-content">
+                            @if (Model.BookImages == null || !Model.BookImages.Any())
+                            {
+                                <!-- Chỉ 1 ảnh default -->
+                                <div id="thumb1" class="tab-pane fade show active">
+                                    <div class="shop-details-thumb">
+                                        <a href="~/Images/@Model.ImageUrl"
+                                           data-lightbox="book-gallery"
+                                           data-title="@Model.Title">
+                                            <img src="~/Images/@Model.ImageUrl"
+                                                 alt="@Model.Title"
+                                                 style="width:315px; height:402px; object-fit:cover;" />
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                int totalCount = Model.BookImages.Count;
+                                int showCount = Math.Min(4, totalCount);   // số ảnh sẽ có link trong tab-content
+
+                                @* 1) Tạo 5 (hoặc ít hơn) tab-pane đầu tiên, mỗi ảnh được gán 1 <a data-lightbox> *@
+                                @for (int i = 0; i < showCount; i++)
+                                {
+                                    var imgUrl = Model.BookImages.ElementAt(i).ImageUrl;
+                                    var isActive = (i == 0) ? "show active" : "fade";
+
+                                    <div id="thumb@(i + 1)" class="tab-pane @isActive">
+                                        <div class="shop-details-thumb">
+                                            <a href="~/Images/@imgUrl"
+                                               data-lightbox="book-gallery"
+                                               data-title="@Model.Title">
+                                                <img src="~/Images/@imgUrl"
+                                                     alt="@Model.Title"
+                                                     style="width:315px; height:402px; object-fit:cover;" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
+
+                                @* 2) Tạo các tab-pane còn lại (ảnh thứ 6, 7,…), nhưng KHÔNG có <a data-lightbox>
+                            (chỉ show <img> bình thường) để tránh trùng link với +N *@
+                                @for (int i = showCount; i < totalCount; i++)
+                                {
+                                    var imgUrl = Model.BookImages.ElementAt(i).ImageUrl;
+                                    var idx = i + 1;
+                                    <div id="thumb@idx" class="tab-pane fade">
+                                        <div class="shop-details-thumb">
+                                            <!-- Ở đây chỉ là <img> thôi, không bọc <a data-lightbox> để tránh dup -->
+                                            <img src="~/Images/@imgUrl"
+                                                 alt="@Model.Title"
+                                                 style="width:315px; height:402px; object-fit:cover;" />
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <!-- Phần thumbnail nhỏ bên dưới -->
+                        <ul class="nav">
+                            @if (Model.BookImages == null || !Model.BookImages.Any())
+                            {
+                                <li class="nav-item">
+                                    <a href="#thumb1" data-bs-toggle="tab" class="nav-link active">
+                                        <img src="~/Images/@Model.ImageUrl"
+                                             alt="@Model.Title"
+                                             style="width:60px; height:80px; object-fit:cover;" />
+                                    </a>
+                                </li>
+                            }
+                            else
+                            {
+                                int totalCount = Model.BookImages.Count;
+                                int showCount = Math.Min(4, totalCount);    // số thumbnail hiển thị bình thường
+                                int remain = totalCount - showCount;        // số ảnh dư (ảnh thứ 6,7,…)
+
+                                @* 1) Hiển thị thumbnail (chuyển tab) cho 5 ảnh đầu *@
+                                @for (int i = 0; i < showCount; i++)
+                                {
+                                    var imgUrl = Model.BookImages.ElementAt(i).ImageUrl;
+                                    var isActive = (i == 0) ? "active" : "";
+
+                                    <li class="nav-item">
+                                        <a href="#thumb@(i + 1)" data-bs-toggle="tab" class="nav-link @isActive">
+                                            <img src="~/Images/@imgUrl"
+                                                 alt="@Model.Title"
+                                                 style="width:60px; height:80px; object-fit:cover;" />
+                                        </a>
+                                    </li>
+                                }
+
+                                @* 2) Nếu có ảnh dư (remain > 0) thì tạo thumbnail “+N” *@
+                                @if (remain > 0)
+                                {
+                                    // Ảnh thứ 6 để Lightbox mở khi click +N
+                                    var sixthUrl = Model.BookImages.ElementAt(showCount).ImageUrl;
+
+                                    <li class="nav-item">
+                                        <a href="~/Images/@sixthUrl"
+                                           data-lightbox="book-gallery"
+                                           data-title="@Model.Title"
+                                           class="nav-link">
+                                            <div style="
+                        width:60px;
+                        height:80px;
+                        background-color:rgba(0,0,0,0.6);
+                        color:white;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:14px;">
+                                                +@remain
+                                            </div>
+                                        </a>
+                                    </li>
+                                }
+
+                                @* 3) Tạo các <a> ẩn (hidden) cho ảnh thứ 7 trở đi, để Lightbox “nhận” đủ gallery
+                            (chú ý: không include ảnh thứ 6 nữa vì đã có thẻ +N) *@
+                                @for (int i = showCount + 1; i < totalCount; i++)
+                                {
+                                    var hiddenUrl = Model.BookImages.ElementAt(i).ImageUrl;
+                                    <a href="~/Images/@hiddenUrl"
+                                       data-lightbox="book-gallery"
+                                       data-title="@Model.Title"
+                                       style="display:none;">
+                                        @* Hidden anchor, Lightbox sẽ đưa ảnh này vào gallery *@
+                                    </a>
+                                }
+                            }
+                        </ul>
+
+
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="shop-details-content">
+                            <div class="title-wrapper">
+                                <h2>@Model.Title</h2>
+                                <h5>Còn Hàng</h5>
+                            </div>
+                        <div class="star">
+                            @* Hiển thị average stars *@
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= rounded)
+                                {
+                                    <i class="fa-solid fa-star"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa-regular fa-star"></i>
+                                }
+                            }
+                            <span>(@avgRating.ToString("0.0") sao · @total đánh giá)</span>
+                        </div>
+
+                            <p>
+                                @* TODO: SHORTDESC *@
+                            </p>
+                            <div class="price-list">
+                            <h3>@Model.Price.ToString("#,##0")VNĐ VNĐ</h3>
+                            </div>
+                            <div class="cart-wrapper">
+                                <div class="quantity-basket">
+                                    <p class="qty">
+                                        <button class="qtyminus" aria-hidden="true">−</button>
+                                        <input type="number" name="qty" id="qty2" min="1" max="10" step="1" value="1">
+                                        <button class="qtyplus" aria-hidden="true">+</button>
+                                    </p>
+                                </div> 
+                            <button class="theme-btn add-to-cart" data-bookid="@Model.BookId">
+                                <i class="fa-solid fa-basket-shopping"></i> Thêm vào giỏ
+                            </button>
+                                <div class="icon-box">
+                                </div>
+                            </div>
+                            <div class="category-box">
+                                <div class="category-list">
+                                    <ul>
+                                        <li>
+                                            <span>Tác giả:</span> @Model.Author.AuthorName
+                                        </li>
+                                        <li>
+                                            <span>Thể loại:</span> @Model.Category.CategoryName
+                                        </li>
+                                    </ul>
+                                    <ul>
+                                        <li>
+                                            <span>Nhà xuất bản:</span> @Model.Publisher.PublisherName
+                                        </li>
+                                 
+                                    </ul>
+
+                                </div>
+                            </div>
+                            <div class="box-check">
+                                <div class="check-list">
+                                    <ul>
+                                        <li>
+                                            <i class="fa-solid fa-check"></i>
+                                        Sản phẩm đẹp chất lượng
+                                        <li>
+                                            <i class="fa-solid fa-check"></i>
+                                        30 ngày đổi trả
+                                        </li>
+                                    </ul>
+                                    <ul>
+                                        <li>
+                                            <i class="fa-solid fa-check"></i>
+                                            Giảm giá 30%
+                                        </li>
+                                        <li>
+                                            <i class="fa-solid fa-check"></i>
+                                        Mua sắm trực tuyến an toàn và bảo mật
+
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="single-tab section-padding pb-0">
+                    <ul class="nav mb-5" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a href="#description" data-bs-toggle="tab" class="nav-link ps-0 active"
+                                aria-selected="true" role="tab">
+                                <h6>Mô tả</h6>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a href="#review" data-bs-toggle="tab" class="nav-link" aria-selected="false" tabindex="-1"
+                                role="tab">
+                                <h6>Đánh giá</h6>
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div id="description" class="tab-pane fade show active" role="tabpanel">
+                            <div class="description-items">
+                                <p>
+                                @Model.Description
+                                </p>
+                            </div>
+                        </div>
+                        <div id="review" class="tab-pane fade" role="tabpanel">
+                            <div class="review-items">
+                            @if (ratings != null && ratings.Any())
+                            {
+                                foreach (var rating in ratings)
+                                {
+                                    <div class="review-wrap-area d-flex gap-4">
+                                        <div class="review-content">
+                                            <div class="head-area d-flex justify-content-between">
+                                                <div>
+                                                    <h5>@rating.Customer.FullName</h5>
+                                                    <span>@rating.CreatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+                                                </div>
+                                                <div class="star">
+                                                    @for (int i = 1; i <= 5; i++)
+                                                    {
+                                                        if (i <= rating.RatingValue)
+                                                        {
+                                                            <i class="fa-solid fa-star"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="fa-regular fa-star"></i>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                            <p class="mt-2">@rating.Comment</p>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p>Chưa có đánh giá nào cho sách này.</p>
+                            }
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <div class="review-form mt-5">
+                                    <form asp-action="SubmitRating" method="post">
+                                        <input type="hidden" name="BookId" value="@Model.BookId" />
+                                        <input type="hidden" name="RatingId" value="@myRating?.RatingId" />
+                                        <label>Chọn số sao:</label>
+                                        <div class="rating-stars mb-3" id="starRating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <i class="fa fa-star @(myRating?.RatingValue >= i ? "active" : "")" data-value="@i"></i>
+                                            }
+                                        </div>
+                                        <input type="hidden" name="RatingValue" id="RatingValue" value="@myRating?.RatingValue" />
+                                        <label>Bình luận:</label>
+                                        <textarea name="Comment" class="form-control mb-3" placeholder="Viết cảm nhận...">@myRating?.Comment</textarea>
+
+                                        <button type="submit" class="theme-btn">Gửi đánh giá</button>
+                                    </form>
+                                </div>
+                            }
+                            else
+                            {
+                                <p>Bạn cần <a href="/Account/Login">đăng nhập</a> để đánh giá.</p>
+                            }
+           
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top Ratting Book Section Start -->
+    <section class="top-ratting-book-section fix section-padding pt-0">
+        <div class="container">
+            <div class="section-title text-center">
+                <h2 class="mb-3 wow fadeInUp" data-wow-delay=".3s">Có thể bạn sẽ thích</h2>
+                <p class="wow fadeInUp" data-wow-delay=".5s">
+                </p>
+            </div>
+        <div class="swiper book-slider">
+            <div class="swiper-wrapper">
+                @{
+                    // Lấy danh sách sách gợi ý từ Controller
+                    var lsBooks = ViewBag.RecommendBooks as List<Book>;
+                }
+
+                @if (lsBooks != null && lsBooks.Any())
+                {
+                    foreach (var item in lsBooks)
+                    {
+                        var firstImg = item.BookImages?.FirstOrDefault()?.ImageUrl ?? "default.jpg";
+                        string url = $"/{item.BookId}.html";//gán đường dẫn bên controller
+                        <div class="swiper-slide">
+                            <div class="shop-box-items style-2">
+                                <div class="book-thumb center">
+                                    <a href="@url">
+                                        <img src ="~/Images/@firstImg" alt="@item.Title" />
+                                    </a>
+                                    <ul class="shop-icon d-grid justify-content-center align-items-center">
+                                        <li>
+                                            <a href="#"><i class="far fa-heart"></i></a>
+                                        </li>
+                                        <li>
+                                            <a href="#"><img class="icon" src="~/assets/img/icon/shuffle.svg" alt="shuffle-icon" /></a>
+                                        </li>
+                                        <li>
+                                            <a href="/Book/Details/@item.BookId"><i class="far fa-eye"></i></a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="shop-content">
+                                    <h3>@item.Title</h3>
+                                    <ul class="price-list">
+                                        <li>@item.Price.ToString("#,##0")VNĐ</li>
+                                    </ul>
+                                </div>
+                                <div class="shop-button">
+                                    <a class="theme-btn add-to-cart" data-bookid="@item.BookId">
+                                        <i class="fa-solid fa-basket-shopping"></i> Thêm vào giỏ
+                                    </a> @* không dùng thẻ button *@
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>Chưa có gợi ý nào!</p>
+                }
+
+            </div>
+        </div>
+        </div>
+    </section>
+@* Bắt sự kiện Add to Cart *@
+@section Scripts {
+    <script>
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault(); // chặn mặc định (nếu là <a>)
+                const bookId = btn.getAttribute('data-bookid');
+                // Lấy số lượng từ input trên detail page (id="qty2")
+                const qtyInput = document.getElementById('qty2');
+                let amount = 1;
+                if (qtyInput) {
+                    amount = parseInt(qtyInput.value) || 1;
+                }
+
+                // Gọi API với cả amount
+                const res = await fetch(`/api/cart/add?bookID=${bookId}&amount=${amount}`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Thông báo nhẹ
+                    showToast("Đã thêm vào giỏ hàng!");
+                } else {
+                    alert('Lỗi thêm giỏ hàng.');
+                }
+            });
+        });
+
+    </script>
+}
+<style>
+    .rating-stars i {
+        font-size: 24px;
+        color: #ccc;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+        /* Hover: giữ ngôi sao đang hover màu cam */
+        .rating-stars i:hover {
+            color: #FF6500;
+        }
+
+            / Các sao sau thì mờ */
+            .rating-stars i:hover ~ i {
+                color: #ddd;
+            }
+
+        /*Khi đã chọn (active) */
+        .rating-stars i.active {
+        color: #FF6500;
+        }
+</style>
+<script>
+    const stars = document.querySelectorAll('#starRating i');
+    const ratingInput = document.getElementById('RatingValue');
+
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const selectedValue = parseInt(star.getAttribute('data-value'));
+            ratingInput.value = selectedValue;
+
+            stars.forEach(s => {
+                s.classList.remove('active');
+                if (parseInt(s.getAttribute('data-value')) <= selectedValue) {
+                    s.classList.add('active');
+                }
+            });
+        });
+    });
+</script>
+<style>
+    /* Header star color */
+    .shop-details-content .star i.fa-solid.fa-star {
+        color: #FF6500;
+    }
+
+    .shop-details-content .star i.fa-regular.fa-star {
+        color: #ccc;
+    }
+</style>
