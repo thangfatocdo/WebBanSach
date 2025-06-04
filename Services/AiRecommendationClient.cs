@@ -13,7 +13,7 @@ public class AiRecommendationClient
     => (await _http.PostAsync("retrain", null)).IsSuccessStatusCode;
 
     // Gọi recommend
-    public async Task<List<int>> RecommendAsync(int userId, int topN = 5)
+    public async Task<List<int>> RecommendAsync(int userId, int topN = int.MaxValue)
     => await _http.GetFromJsonAsync<List<int>>($"recommend?userId={userId}&topN={topN}")
        ?? new List<int>();
 }

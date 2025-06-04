@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using WebBanSach.Models.Entities;
 
 namespace WebBanSach.Models.Entities;
+
 public partial class Book
 {
     public int BookId { get; set; }

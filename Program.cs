@@ -59,4 +59,4 @@ app.MapControllerRoute(
 app.Run();
 
 
-//dotnet ef dbcontext scaffold "data source=DESKTOP-7B1B1GQ\SQLEXPRESS;initial catalog=BookstoreDB;persist security info=True;user id=sa;password=123456;encrypt=True;trustservercertificate=True" Microsoft.EntityFrameworkCore.SqlServer -o Models -f
+//dotnet ef dbcontext scaffold "Data Source=webbansach.database.windows.net;Initial Catalog=BookstoreDB;Persist Security Info=True;User ID=yendaotg;Password=Thanglolo1090@;Trust Server Certificate=True" Microsoft.EntityFrameworkCore.SqlServer -o Models -f
